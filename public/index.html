@@ -660,6 +660,208 @@
     .ctx-item.danger:hover { background: rgba(255,69,58,0.1); }
     .ctx-divider { height: 1px; background: var(--glass-border); margin: 4px 0; }
 
+    /* ── PINNED SECTION ── */
+    .pinned-section .category-header { margin-bottom: 14px; }
+    .pinned-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--yellow);
+    }
+    .pinned-section .bookmark-card {
+      border-color: rgba(255,214,10,0.18);
+    }
+    .pinned-section .bookmark-card:hover {
+      border-color: rgba(255,214,10,0.35);
+      box-shadow: 0 12px 40px rgba(255,214,10,0.08);
+    }
+    .pin-indicator {
+      position: absolute;
+      top: 8px; right: 8px;
+      font-size: 10px;
+      opacity: 0.5;
+    }
+
+    /* ── CHAT PANEL ── */
+    .chat-panel {
+      position: fixed;
+      right: -420px;
+      top: 0; bottom: 0;
+      width: 400px;
+      z-index: 160;
+      background: rgba(6,10,24,0.97);
+      backdrop-filter: blur(40px) saturate(1.5);
+      -webkit-backdrop-filter: blur(40px) saturate(1.5);
+      border-left: 1px solid var(--glass-border);
+      display: flex;
+      flex-direction: column;
+      transition: right 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: -24px 0 80px rgba(0,0,0,0.5);
+    }
+    .chat-panel.open { right: 0; }
+
+    .chat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 15px 18px;
+      border-bottom: 1px solid var(--glass-border);
+      flex-shrink: 0;
+    }
+    .chat-header-left { display: flex; align-items: center; gap: 10px; }
+    .chat-header-title { font-size: 14px; font-weight: 700; }
+    .chat-online-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      animation: pulse 2s infinite;
+    }
+    .chat-header-actions { display: flex; align-items: center; gap: 8px; }
+    .chat-icon-btn {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 13px;
+      padding: 5px 10px;
+      transition: background 0.15s, color 0.15s;
+      font-family: inherit;
+    }
+    .chat-icon-btn:hover { background: rgba(255,255,255,0.13); color: var(--text-primary); }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.08) transparent;
+    }
+    .chat-msg { display: flex; flex-direction: column; gap: 5px; }
+    .chat-msg.user { align-items: flex-end; }
+    .chat-msg.ai   { align-items: flex-start; }
+
+    .chat-bubble {
+      max-width: 88%;
+      padding: 10px 14px;
+      font-size: 13.5px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .user .chat-bubble {
+      background: var(--accent);
+      color: #fff;
+      border-radius: 18px 18px 4px 18px;
+    }
+    .ai .chat-bubble {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid var(--glass-border);
+      color: var(--text-primary);
+      border-radius: 18px 18px 18px 4px;
+    }
+    .chat-action-tag {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: rgba(48,209,88,0.12);
+      color: var(--green);
+      border: 1px solid rgba(48,209,88,0.2);
+      animation: fadeIn 0.3s ease;
+    }
+    .chat-typing {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 10px 16px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid var(--glass-border);
+      border-radius: 18px 18px 18px 4px;
+      width: fit-content;
+    }
+    .tdot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      animation: pulse 1.1s infinite;
+    }
+    .tdot:nth-child(2) { animation-delay: 0.18s; }
+    .tdot:nth-child(3) { animation-delay: 0.36s; }
+
+    .chat-input-area {
+      padding: 12px 14px 16px;
+      border-top: 1px solid var(--glass-border);
+      display: flex;
+      gap: 9px;
+      align-items: flex-end;
+      flex-shrink: 0;
+    }
+    #chat-input {
+      flex: 1;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid var(--glass-border);
+      border-radius: 14px;
+      color: var(--text-primary);
+      font-size: 13.5px;
+      font-family: inherit;
+      padding: 10px 13px;
+      outline: none;
+      resize: none;
+      max-height: 120px;
+      min-height: 42px;
+      line-height: 1.45;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    #chat-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    #chat-input::placeholder { color: var(--text-muted); }
+    .chat-send-btn {
+      background: var(--accent);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 16px;
+      width: 42px; height: 42px;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.15s, transform 0.1s;
+      flex-shrink: 0;
+    }
+    .chat-send-btn:hover { opacity: 0.85; }
+    .chat-send-btn:active { transform: scale(0.92); }
+    .chat-send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* ── IMPORT MODAL ── */
+    .import-panel {
+      padding: 20px 18px;
+      border-top: 1px solid var(--glass-border);
+      flex-shrink: 0;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      background: rgba(255,255,255,0.03);
+    }
+    .import-panel.show { display: flex; }
+    .import-title { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+    .import-steps { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+    .import-drop {
+      border: 1.5px dashed var(--glass-border);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .import-drop:hover, .import-drop.drag-over { border-color: var(--accent); background: rgba(41,151,255,0.06); color: var(--accent); }
+    #import-file { display: none; }
+    .import-result { font-size: 12px; color: var(--text-secondary); }
+
     .ai-badge {
       display: inline-block;
       font-size: 10px;
@@ -808,6 +1010,7 @@
         <div class="clock" id="clock"></div>
         <button class="header-btn" onclick="openAddModal()">＋ Add Bookmark</button>
         <button class="header-btn" onclick="openCatModal()">📂 New Category</button>
+        <button class="header-btn" onclick="toggleChat()" id="chat-toggle-btn">🤖 AI</button>
         <button class="header-btn" onclick="showChangePin()">🔐 PIN</button>
         <button class="header-btn" onclick="lockDashboard()">🔒 Lock</button>
       </div>
@@ -902,10 +1105,44 @@
   </div>
 </div>
 
+<!-- ── CHAT PANEL ── -->
+<div class="chat-panel" id="chat-panel">
+  <div class="chat-header">
+    <div class="chat-header-left">
+      <div class="chat-online-dot"></div>
+      <span class="chat-header-title">🤖 AI Assistant</span>
+    </div>
+    <div class="chat-header-actions">
+      <button class="chat-icon-btn" onclick="toggleImport()" title="Import Chrome Bookmarks">📥</button>
+      <button class="chat-icon-btn" onclick="clearChat()" title="Clear chat">🗑</button>
+      <button class="chat-icon-btn" onclick="toggleChat()">✕</button>
+    </div>
+  </div>
+
+  <div class="chat-messages" id="chat-messages"></div>
+
+  <!-- Chrome import sub-panel -->
+  <div class="import-panel" id="import-panel">
+    <div class="import-title">📥 Import Chrome Bookmarks</div>
+    <div class="import-steps">1. Buka Chrome → Bookmarks → Bookmark Manager<br>2. Klik ⋮ → Export bookmarks<br>3. Upload file .html di bawah</div>
+    <div class="import-drop" id="import-drop" onclick="document.getElementById('import-file').click()">
+      📂 Klik atau drag & drop file bookmarks.html
+    </div>
+    <input type="file" id="import-file" accept=".html" onchange="handleImportFile(this)" />
+    <div class="import-result" id="import-result"></div>
+  </div>
+
+  <div class="chat-input-area">
+    <textarea id="chat-input" placeholder="Tanya AI: tambah bookmark, atur kategori, rekomendasikan…" rows="1"></textarea>
+    <button class="chat-send-btn" id="chat-send-btn" onclick="sendChat()">↑</button>
+  </div>
+</div>
+
 <!-- ── CONTEXT MENU ── -->
 <div class="ctx-menu" id="ctx-menu">
   <div class="ctx-item" onclick="ctxEdit()">✏️ Edit</div>
   <div class="ctx-item" onclick="ctxOpen()">↗️ Open in new tab</div>
+  <div class="ctx-item" id="ctx-pin-item" onclick="ctxPin()">📌 Pin</div>
   <div class="ctx-divider"></div>
   <div class="ctx-item danger" onclick="ctxDelete()">🗑 Delete</div>
 </div>
@@ -1115,6 +1352,28 @@ function renderDashboard() {
 
   if (_observer) { _observer.disconnect(); _observer = null; }
 
+  // Pinned section
+  const pinned = data.bookmarks.filter(b => b.pinned);
+  if (pinned.length) {
+    const section = document.createElement('div');
+    section.className = 'category-section pinned-section';
+    section.dataset.cat = '__pinned__';
+    section.innerHTML = `
+      <div class="category-header">
+        <span style="font-size:13px;line-height:1">📌</span>
+        <span class="pinned-label">Pinned</span>
+      </div>
+      <div class="bookmarks-grid" id="grid-__pinned__"></div>
+    `;
+    container.appendChild(section);
+    const grid = document.getElementById('grid-__pinned__');
+    pinned.forEach(bm => {
+      const card = makeCard(bm);
+      card.innerHTML += '<span class="pin-indicator">📌</span>';
+      grid.appendChild(card);
+    });
+  }
+
   data.categories.forEach(cat => {
     const catBms = data.bookmarks.filter(b => b.cat === cat.id);
     const section = document.createElement('div');
@@ -1142,6 +1401,23 @@ function renderDashboard() {
 function renderSidebar() {
   const sidebar = document.getElementById('sidebar');
   sidebar.innerHTML = '<div class="sidebar-title">Categories</div>';
+
+  const pinned = data.bookmarks.filter(b => b.pinned);
+  if (pinned.length) {
+    const btn = document.createElement('button');
+    btn.className = 'sidebar-item';
+    btn.dataset.cat = '__pinned__';
+    btn.innerHTML = `
+      <span style="font-size:12px;line-height:1;flex-shrink:0">📌</span>
+      <span style="overflow:hidden;text-overflow:ellipsis;color:var(--yellow)">Pinned</span>
+      <span class="sidebar-count" style="background:rgba(255,214,10,0.12);color:var(--yellow)">${pinned.length}</span>
+    `;
+    btn.onclick = () => {
+      const section = document.querySelector('.category-section[data-cat="__pinned__"]');
+      if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    sidebar.appendChild(btn);
+  }
 
   data.categories.forEach(cat => {
     const color = COLORS[cat.color] || '#2997ff';
@@ -1385,14 +1661,25 @@ async function saveCategory() {
 // ─── CONTEXT MENU ────────────────────────────────────────────────────────────
 function showCtxMenu(e, id) {
   ctxTargetId = id;
+  const bm = data.bookmarks.find(b => b.id === id);
+  document.getElementById('ctx-pin-item').textContent = bm?.pinned ? '📌 Unpin' : '📌 Pin';
   const menu = document.getElementById('ctx-menu');
   menu.style.display = 'block';
   menu.style.left = Math.min(e.clientX, window.innerWidth - 160) + 'px';
-  menu.style.top  = Math.min(e.clientY, window.innerHeight - 120) + 'px';
+  menu.style.top  = Math.min(e.clientY, window.innerHeight - 140) + 'px';
 }
 function hideCtxMenu() { document.getElementById('ctx-menu').style.display = 'none'; }
 function ctxEdit() { hideCtxMenu(); openEditModal(ctxTargetId); }
 function ctxOpen() { hideCtxMenu(); const bm = data.bookmarks.find(b => b.id === ctxTargetId); if (bm) window.open(bm.url, '_blank'); }
+async function ctxPin() {
+  hideCtxMenu();
+  const res = await api('PATCH', `/bookmarks/${ctxTargetId}/pin`);
+  if (!res.ok) return;
+  const { pinned } = await res.json();
+  const bm = data.bookmarks.find(b => b.id === ctxTargetId);
+  if (bm) bm.pinned = pinned ? 1 : 0;
+  renderDashboard();
+}
 async function ctxDelete() {
   hideCtxMenu();
   if (!confirm('Delete this bookmark?')) return;
@@ -1487,6 +1774,167 @@ document.getElementById('bm-cat').addEventListener('change', function() {
   setAiStatus('manual', '✏️ Mode manual');
   clearTimeout(aiTimer);
 });
+
+// ─── CHAT ────────────────────────────────────────────────────────────────────
+let chatHistory = [];
+let chatIsOpen  = false;
+
+function toggleChat() {
+  chatIsOpen = !chatIsOpen;
+  document.getElementById('chat-panel').classList.toggle('open', chatIsOpen);
+  document.getElementById('chat-toggle-btn').style.color = chatIsOpen ? 'var(--accent)' : '';
+  if (chatIsOpen) {
+    if (chatHistory.length === 0) initChatGreeting();
+    setTimeout(() => document.getElementById('chat-input').focus(), 340);
+  }
+}
+
+function initChatGreeting() {
+  appendMsg('ai', 'Halo Reva! 👋 Saya bisa bantu:\n• Tambah / hapus / atur ulang bookmark\n• Buat kategori baru\n• Pin bookmark penting\n• Rekomendasikan tools & sites berguna\n\nMau ngapain?');
+}
+
+function clearChat() {
+  chatHistory = [];
+  document.getElementById('chat-messages').innerHTML = '';
+  initChatGreeting();
+}
+
+function appendMsg(role, text, actions) {
+  const wrap = document.getElementById('chat-messages');
+  const msg  = document.createElement('div');
+  msg.className = `chat-msg ${role}`;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-bubble';
+  bubble.textContent = text;
+  msg.appendChild(bubble);
+
+  (actions || []).forEach(a => {
+    const tag = document.createElement('div');
+    tag.className = 'chat-action-tag';
+    tag.textContent = actionLabel(a);
+    msg.appendChild(tag);
+  });
+
+  wrap.appendChild(msg);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function actionLabel(a) {
+  const map = {
+    add_bookmark:    name => `✅ Ditambahkan: "${name}"`,
+    create_category: name => `✅ Kategori baru: "${name}"`,
+    move_bookmark:   name => `✅ Dipindahkan: "${name}"`,
+    pin_bookmark:    (name, pinned) => `✅ ${pinned ? 'Di-pin' : 'Unpin'}: "${name}"`,
+    delete_bookmark: name => `✅ Dihapus: "${name}"`,
+    update_bookmark: name => `✅ Diupdate: "${name}"`,
+  };
+  const fn = map[a.type];
+  return fn ? fn(a.name, a.pinned) : `✅ ${a.type}`;
+}
+
+let typingEl = null;
+function showTyping() {
+  const wrap = document.getElementById('chat-messages');
+  typingEl = document.createElement('div');
+  typingEl.className = 'chat-msg ai';
+  typingEl.innerHTML = '<div class="chat-typing"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div>';
+  wrap.appendChild(typingEl);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+function hideTyping() { typingEl?.remove(); typingEl = null; }
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const text  = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  appendMsg('user', text);
+  chatHistory.push({ role: 'user', content: text });
+
+  const btn = document.getElementById('chat-send-btn');
+  btn.disabled = true;
+  showTyping();
+
+  try {
+    const res = await api('POST', '/ai/chat', { messages: chatHistory });
+    hideTyping();
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      appendMsg('ai', `Error: ${err.error || 'Coba lagi.'}`);
+      return;
+    }
+
+    const result = await res.json();
+    appendMsg('ai', result.message, result.actions);
+    chatHistory.push({ role: 'assistant', content: result.message });
+
+    if (result.actions?.length) {
+      const dr = await fetch('/api/data');
+      if (dr.ok) { data = await dr.json(); renderDashboard(); }
+    }
+  } catch (e) {
+    hideTyping();
+    appendMsg('ai', 'Koneksi error. Coba lagi.');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('chat-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+});
+document.getElementById('chat-input').addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+
+// ─── CHROME IMPORT ───────────────────────────────────────────────────────────
+function toggleImport() {
+  const panel = document.getElementById('import-panel');
+  panel.classList.toggle('show');
+}
+
+const importDrop = document.getElementById('import-drop');
+importDrop.addEventListener('dragover', e => { e.preventDefault(); importDrop.classList.add('drag-over'); });
+importDrop.addEventListener('dragleave', () => importDrop.classList.remove('drag-over'));
+importDrop.addEventListener('drop', e => {
+  e.preventDefault();
+  importDrop.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processImportFile(file);
+});
+
+function handleImportFile(input) {
+  if (input.files[0]) processImportFile(input.files[0]);
+}
+
+async function processImportFile(file) {
+  const result = document.getElementById('import-result');
+  result.textContent = 'Membaca file…';
+
+  const html = await file.text();
+  const res  = await api('POST', '/import/chrome', { html });
+  if (!res.ok) { result.textContent = 'Gagal parse file.'; return; }
+
+  const { bookmarks: bms } = await res.json();
+  if (!bms.length) { result.textContent = 'Tidak ada bookmark ditemukan.'; return; }
+
+  result.textContent = `Ditemukan ${bms.length} bookmark. Kirim ke AI untuk dikategorikan?`;
+
+  // Send to chat for AI to categorize and add
+  document.getElementById('import-panel').classList.remove('show');
+  toggleChat();
+
+  const list = bms.slice(0, 50).map(b => `- ${b.name}: ${b.url}`).join('\n');
+  const msg  = `Tolong tambahkan bookmark berikut ke dashboard, kategorikan yang sesuai:\n\n${list}${bms.length > 50 ? `\n\n...dan ${bms.length - 50} lainnya` : ''}`;
+
+  document.getElementById('chat-input').value = msg;
+  document.getElementById('chat-input').style.height = '120px';
+}
 
 // ─── START ───────────────────────────────────────────────────────────────────
 init();

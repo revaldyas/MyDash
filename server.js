@@ -33,9 +33,12 @@ db.exec(`
     cat        TEXT NOT NULL,
     emoji      TEXT DEFAULT '🌐',
     color      TEXT DEFAULT 'blue',
+    pinned     INTEGER DEFAULT 0,
     sort_order INTEGER DEFAULT 0
   );
 `);
+// migrate existing DB
+try { db.exec('ALTER TABLE bookmarks ADD COLUMN pinned INTEGER DEFAULT 0'); } catch {}
 
 // Persist session secret across restarts
 let sessionSecret = db.prepare("SELECT value FROM config WHERE key='session_secret'").get()?.value;
@@ -171,6 +174,14 @@ app.delete('/api/bookmarks/:id', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+app.patch('/api/bookmarks/:id/pin', requireAuth, (req, res) => {
+  const row = db.prepare('SELECT pinned FROM bookmarks WHERE id=?').get(req.params.id);
+  if (!row) return res.status(404).json({ error: 'Not found' });
+  const pinned = row.pinned ? 0 : 1;
+  db.prepare('UPDATE bookmarks SET pinned=? WHERE id=?').run(pinned, req.params.id);
+  res.json({ pinned: !!pinned });
+});
+
 // Categories
 app.post('/api/categories', requireAuth, (req, res) => {
   const { id, name, color } = req.body;
@@ -184,7 +195,211 @@ app.delete('/api/categories/:id', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
-// ── AI ────────────────────────────────────────────────────────────────────────
+// ── AI CHAT ──────────────────────────────────────────────────────────────────
+const AI_TOOLS = [
+  {
+    type: 'function',
+    function: {
+      name: 'add_bookmark',
+      description: 'Add a new bookmark to the dashboard',
+      parameters: {
+        type: 'object',
+        properties: {
+          name:        { type: 'string', description: 'Display name' },
+          url:         { type: 'string', description: 'Full URL including https://' },
+          category_id: { type: 'string', description: 'Existing category id' },
+          emoji:       { type: 'string', description: 'Single emoji icon' },
+          color:       { type: 'string', enum: ['blue','green','red','purple','pink','orange','teal','yellow','indigo','cyan'] },
+        },
+        required: ['name', 'url', 'category_id'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_category',
+      description: 'Create a new bookmark category',
+      parameters: {
+        type: 'object',
+        properties: {
+          name:  { type: 'string' },
+          color: { type: 'string', enum: ['blue','green','red','purple','pink','orange','teal','yellow','indigo','cyan'] },
+        },
+        required: ['name', 'color'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'move_bookmark',
+      description: 'Move a bookmark to a different category',
+      parameters: {
+        type: 'object',
+        properties: {
+          bookmark_id:  { type: 'string' },
+          category_id:  { type: 'string' },
+        },
+        required: ['bookmark_id', 'category_id'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'pin_bookmark',
+      description: 'Pin or unpin a bookmark',
+      parameters: {
+        type: 'object',
+        properties: {
+          bookmark_id: { type: 'string' },
+          pinned:      { type: 'boolean' },
+        },
+        required: ['bookmark_id', 'pinned'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'delete_bookmark',
+      description: 'Permanently delete a bookmark',
+      parameters: {
+        type: 'object',
+        properties: {
+          bookmark_id: { type: 'string' },
+        },
+        required: ['bookmark_id'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_bookmark',
+      description: 'Update name, URL, emoji, or color of an existing bookmark',
+      parameters: {
+        type: 'object',
+        properties: {
+          bookmark_id: { type: 'string' },
+          name:        { type: 'string' },
+          url:         { type: 'string' },
+          emoji:       { type: 'string' },
+          color:       { type: 'string', enum: ['blue','green','red','purple','pink','orange','teal','yellow','indigo','cyan'] },
+        },
+        required: ['bookmark_id'],
+      },
+    },
+  },
+];
+
+app.post('/api/ai/chat', requireAuth, async (req, res) => {
+  if (!process.env.DEEPSEEK_API_KEY) {
+    return res.status(503).json({ error: 'AI not configured — set DEEPSEEK_API_KEY' });
+  }
+
+  const { messages } = req.body;
+  const categories = db.prepare('SELECT * FROM categories ORDER BY rowid').all();
+  const bookmarks  = db.prepare('SELECT * FROM bookmarks  ORDER BY rowid').all();
+
+  const system = `You are an AI assistant for Bale Dashboard — a personal bookmark manager for a developer named Reva.
+
+Current categories (${categories.length}):
+${categories.map(c => `  [${c.id}] "${c.name}" color:${c.color}`).join('\n')}
+
+Current bookmarks (${bookmarks.length}):
+${bookmarks.map(b => `  [${b.id}] "${b.name}" → ${b.url} | cat:${b.cat}${b.pinned ? ' | pinned' : ''}`).join('\n')}
+
+Rules:
+- Respond in the same language the user writes in.
+- Be concise and friendly.
+- Use tools to perform actions immediately when asked — don't just describe what you would do.
+- When recommending sites, suggest specific real URLs then offer to add them.
+- For bulk operations, use multiple tool calls in one response.`;
+
+  const msgs = [{ role: 'system', content: system }, ...messages.slice(-20)];
+  const actions = [];
+
+  for (let round = 0; round < 8; round++) {
+    const resp = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: msgs,
+        tools: AI_TOOLS,
+        tool_choice: 'auto',
+        max_tokens: 1000,
+      }),
+    });
+
+    const json = await resp.json();
+    const choice = json.choices?.[0];
+    if (!choice) break;
+
+    msgs.push(choice.message);
+    if (choice.finish_reason !== 'tool_calls') break;
+
+    for (const call of (choice.message.tool_calls || [])) {
+      const fn   = call.function.name;
+      const args = JSON.parse(call.function.arguments);
+      let result = {};
+
+      if (fn === 'add_bookmark') {
+        const id = 'b' + Date.now() + Math.floor(Math.random() * 999);
+        db.prepare('INSERT INTO bookmarks (id, name, url, cat, emoji, color) VALUES (?,?,?,?,?,?)')
+          .run(id, args.name, args.url, args.category_id, args.emoji || '🌐', args.color || 'blue');
+        result = { success: true, id };
+        actions.push({ type: 'add_bookmark', name: args.name });
+
+      } else if (fn === 'create_category') {
+        const id = 'cat_' + Date.now();
+        db.prepare('INSERT INTO categories (id, name, color) VALUES (?,?,?)').run(id, args.name, args.color);
+        result = { success: true, id };
+        actions.push({ type: 'create_category', name: args.name });
+
+      } else if (fn === 'move_bookmark') {
+        db.prepare('UPDATE bookmarks SET cat=? WHERE id=?').run(args.category_id, args.bookmark_id);
+        const bm = db.prepare('SELECT name FROM bookmarks WHERE id=?').get(args.bookmark_id);
+        result = { success: true };
+        actions.push({ type: 'move_bookmark', name: bm?.name || args.bookmark_id });
+
+      } else if (fn === 'pin_bookmark') {
+        db.prepare('UPDATE bookmarks SET pinned=? WHERE id=?').run(args.pinned ? 1 : 0, args.bookmark_id);
+        const bm = db.prepare('SELECT name FROM bookmarks WHERE id=?').get(args.bookmark_id);
+        result = { success: true };
+        actions.push({ type: 'pin_bookmark', name: bm?.name || args.bookmark_id, pinned: args.pinned });
+
+      } else if (fn === 'delete_bookmark') {
+        const bm = db.prepare('SELECT name FROM bookmarks WHERE id=?').get(args.bookmark_id);
+        db.prepare('DELETE FROM bookmarks WHERE id=?').run(args.bookmark_id);
+        result = { success: true };
+        actions.push({ type: 'delete_bookmark', name: bm?.name || args.bookmark_id });
+
+      } else if (fn === 'update_bookmark') {
+        const bm = db.prepare('SELECT * FROM bookmarks WHERE id=?').get(args.bookmark_id);
+        if (bm) {
+          db.prepare('UPDATE bookmarks SET name=?, url=?, emoji=?, color=? WHERE id=?')
+            .run(args.name ?? bm.name, args.url ?? bm.url, args.emoji ?? bm.emoji, args.color ?? bm.color, args.bookmark_id);
+        }
+        result = { success: !!bm };
+        actions.push({ type: 'update_bookmark', name: args.name || bm?.name });
+      }
+
+      msgs.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify(result) });
+    }
+  }
+
+  const last = msgs[msgs.length - 1];
+  const message = typeof last.content === 'string' ? last.content : 'Done!';
+  res.json({ message, actions });
+});
+
+// ── AI CATEGORIZE ─────────────────────────────────────────────────────────────
 app.post('/api/ai/categorize', requireAuth, async (req, res) => {
   if (!process.env.DEEPSEEK_API_KEY) {
     return res.status(503).json({ error: 'AI not configured — set DEEPSEEK_API_KEY' });
@@ -239,6 +454,26 @@ New      → {"action":"create","name":"<name>","color":"blue|green|purple|orang
   } catch {
     res.status(500).json({ error: 'AI response parse error' });
   }
+});
+
+// ── CHROME BOOKMARKS IMPORT ───────────────────────────────────────────────────
+app.post('/api/import/chrome', requireAuth, (req, res) => {
+  const { html } = req.body;
+  if (!html) return res.status(400).json({ error: 'html required' });
+
+  // Parse Netscape bookmark HTML format
+  const bookmarks = [];
+  const linkRe = /<A\s+HREF="([^"]+)"[^>]*>([^<]+)<\/A>/gi;
+  let match;
+  while ((match = linkRe.exec(html)) !== null) {
+    const url  = match[1].trim();
+    const name = match[2].trim();
+    if (url.startsWith('http') && name) {
+      bookmarks.push({ name, url });
+    }
+  }
+
+  res.json({ bookmarks, count: bookmarks.length });
 });
 
 // ── START ─────────────────────────────────────────────────────────────────────
