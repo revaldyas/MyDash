@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bale Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-deep: #060c1a;
+      --bg-mid: #0d1b3e;
+      --glass-bg: rgba(255,255,255,0.07);
+      --glass-border: rgba(255,255,255,0.12);
+      --glass-hover: rgba(255,255,255,0.11);
+      --accent: #2997ff;
+      --accent-soft: rgba(41,151,255,0.18);
+      --accent-glow: rgba(41,151,255,0.35);
+      --text-primary: #f5f5f7;
+      --text-secondary: rgba(245,245,247,0.55);
+      --text-muted: rgba(245,245,247,0.35);
+      --red: #ff453a;
+      --green: #30d158;
+      --yellow: #ffd60a;
+      --purple: #bf5af2;
+      --pink: #ff375f;
+      --teal: #5ac8fa;
+      --orange: #ff9f0a;
+    }
+
+    @keyframes orb1 {
+      0%,100% { transform: translate(0,0) scale(1); }
+      33% { transform: translate(60px,-40px) scale(1.1); }
+      66% { transform: translate(-30px,50px) scale(0.9); }
+    }
+    @keyframes orb2 {
+      0%,100% { transform: translate(0,0) scale(1); }
+      33% { transform: translate(-80px,30px) scale(0.95); }
+      66% { transform: translate(40px,-60px) scale(1.05); }
+    }
+    @keyframes orb3 {
+      0%,100% { transform: translate(0,0) scale(1); }
+      50% { transform: translate(50px,40px) scale(1.08); }
+    }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeInScale { from { opacity:0; transform:scale(0.94); } to { opacity:1; transform:scale(1); } }
+    @keyframes pinShake { 0%,100% { transform:translateX(0); } 20%,60% { transform:translateX(-8px); } 40%,80% { transform:translateX(8px); } }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+    @keyframes dotPop { 0% { transform:scale(0.3); } 60% { transform:scale(1.2); } 100% { transform:scale(1); } }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── AMBIENT BACKGROUND ── */
+    .bg-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background: radial-gradient(ellipse at 20% 20%, #0d1b3e 0%, #060c1a 70%);
+      overflow: hidden;
+    }
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.45;
+      will-change: transform;
+    }
+    .orb-1 { width:600px; height:600px; background:radial-gradient(circle, #1a4a8a, #0a2050); top:-100px; left:-150px; animation:orb1 20s ease-in-out infinite; }
+    .orb-2 { width:500px; height:500px; background:radial-gradient(circle, #2997ff33, #1a3a6a); top:40%; right:-100px; animation:orb2 25s ease-in-out infinite; }
+    .orb-3 { width:400px; height:400px; background:radial-gradient(circle, #bf5af222, #0d1b3e); bottom:-100px; left:30%; animation:orb3 18s ease-in-out infinite; }
+
+    /* ── AUTH SCREEN ── */
+    #auth-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 0;
+    }
+    .auth-card {
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(40px) saturate(1.8);
+      -webkit-backdrop-filter: blur(40px) saturate(1.8);
+      border: 1px solid var(--glass-border);
+      border-radius: 28px;
+      padding: 48px 40px 40px;
+      width: 340px;
+      animation: fadeInScale 0.5s ease both;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+    .auth-icon {
+      width: 56px; height: 56px;
+      background: linear-gradient(135deg, #2997ff, #0066cc);
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      margin: 0 auto 20px;
+      box-shadow: 0 8px 24px rgba(41,151,255,0.35);
+    }
+    .auth-title {
+      font-size: 22px;
+      font-weight: 700;
+      text-align: center;
+      letter-spacing: -0.3px;
+      margin-bottom: 4px;
+    }
+    .auth-subtitle {
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .pin-dots {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    .pin-dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.3);
+      background: transparent;
+      transition: background 0.15s, border-color 0.15s, transform 0.15s;
+    }
+    .pin-dot.filled {
+      background: var(--accent);
+      border-color: var(--accent);
+      animation: dotPop 0.2s ease;
+    }
+    .pin-dot.error { border-color: var(--red); background: var(--red); }
+    .pin-keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .pin-key {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      color: var(--text-primary);
+      font-size: 20px;
+      font-weight: 500;
+      height: 56px;
+      cursor: pointer;
+      transition: background 0.12s, transform 0.1s;
+      display: flex; align-items: center; justify-content: center;
+      font-family: inherit;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .pin-key:hover { background: rgba(255,255,255,0.14); }
+    .pin-key:active { transform: scale(0.92); background: rgba(41,151,255,0.25); }
+    .pin-key.del { font-size: 15px; color: var(--text-secondary); }
+    .pin-key.zero { grid-column: 2; }
+    .auth-error {
+      color: var(--red);
+      font-size: 12px;
+      text-align: center;
+      margin-top: 14px;
+      min-height: 16px;
+      animation: fadeIn 0.2s ease;
+    }
+    .auth-hint {
+      color: var(--text-muted);
+      font-size: 12px;
+      text-align: center;
+      margin-top: 14px;
+    }
+    .auth-hint a { color: var(--accent); cursor: pointer; text-decoration: none; }
+    .auth-hint a:hover { text-decoration: underline; }
+
+    /* ── SETUP SCREEN ── */
+    #setup-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      display: none;
+    }
+    .setup-card {
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(40px) saturate(1.8);
+      -webkit-backdrop-filter: blur(40px) saturate(1.8);
+      border: 1px solid var(--glass-border);
+      border-radius: 28px;
+      padding: 48px 40px 40px;
+      width: 360px;
+      animation: fadeInScale 0.4s ease both;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+    .setup-step { display: none; }
+    .setup-step.active { display: block; }
+
+    /* ── MAIN DASHBOARD ── */
+    #dashboard {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      padding: 0 32px 48px;
+      display: none;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px 0 0;
+      animation: fadeIn 0.5s ease 0.1s both;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .logo-mark {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #2997ff, #0066cc);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px;
+      box-shadow: 0 4px 12px rgba(41,151,255,0.3);
+    }
+    .logo-text { font-size: 17px; font-weight: 700; letter-spacing: -0.2px; }
+    .logo-text span { color: var(--text-secondary); font-weight: 400; }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .clock {
+      font-size: 14px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+    .header-btn {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 10px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 7px 14px;
+      display: flex; align-items: center; gap: 6px;
+      transition: background 0.15s, color 0.15s;
+      font-family: inherit;
+    }
+    .header-btn:hover { background: var(--glass-hover); color: var(--text-primary); }
+
+    /* ── GREETING ── */
+    .greeting-section {
+      margin: 36px 0 32px;
+      animation: fadeIn 0.5s ease 0.15s both;
+    }
+    .greeting-time {
+      font-size: 13px;
+      color: var(--accent);
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .greeting-text {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+    }
+    .greeting-sub {
+      font-size: 15px;
+      color: var(--text-secondary);
+      margin-top: 6px;
+    }
+
+    /* ── SEARCH ── */
+    .search-wrap {
+      position: relative;
+      margin-bottom: 36px;
+      max-width: 500px;
+      animation: fadeIn 0.5s ease 0.2s both;
+    }
+    .search-icon {
+      position: absolute;
+      left: 16px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 15px;
+      pointer-events: none;
+    }
+    #search-input {
+      width: 100%;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 14px;
+      color: var(--text-primary);
+      font-size: 15px;
+      font-family: inherit;
+      padding: 13px 16px 13px 44px;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+      backdrop-filter: blur(20px);
+    }
+    #search-input::placeholder { color: var(--text-muted); }
+    #search-input:focus {
+      border-color: var(--accent);
+      background: rgba(41,151,255,0.07);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    /* ── CATEGORY SECTION ── */
+    .category-section {
+      margin-bottom: 36px;
+      animation: fadeIn 0.5s ease 0.25s both;
+    }
+    .category-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .category-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+    }
+    .category-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .bookmarks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+    }
+
+    /* ── BOOKMARK CARD ── */
+    .bookmark-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px) saturate(1.5);
+      -webkit-backdrop-filter: blur(20px) saturate(1.5);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 16px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      position: relative;
+      overflow: hidden;
+    }
+    .bookmark-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .bookmark-card:hover {
+      background: var(--glass-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+      border-color: rgba(255,255,255,0.2);
+    }
+    .bookmark-card:active { transform: translateY(0) scale(0.98); }
+    .bookmark-card.hidden { display: none; }
+    .bookmark-icon {
+      width: 40px; height: 40px;
+      border-radius: 11px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 19px;
+      flex-shrink: 0;
+      overflow: hidden;
+      position: relative;
+    }
+    .bookmark-icon img {
+      width: 24px; height: 24px;
+      object-fit: contain;
+      border-radius: 4px;
+    }
+    .bookmark-icon .icon-fallback {
+      font-size: 19px;
+      line-height: 1;
+    }
+    .bookmark-info { flex: 1; min-width: 0; }
+    .bookmark-name {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .bookmark-url {
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+
+    /* ── ADD BUTTON ── */
+    .add-bookmark-btn {
+      background: rgba(255,255,255,0.04);
+      border: 1px dashed rgba(255,255,255,0.15);
+      border-radius: 16px;
+      padding: 16px;
+      cursor: pointer;
+      color: var(--text-muted);
+      display: flex; align-items: center; gap: 13px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .add-bookmark-btn:hover { background: rgba(41,151,255,0.08); color: var(--accent); border-color: var(--accent); }
+    .add-icon {
+      width: 40px; height: 40px;
+      border-radius: 11px;
+      background: rgba(255,255,255,0.06);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(12px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: rgba(20,28,50,0.95);
+      border: 1px solid var(--glass-border);
+      border-radius: 22px;
+      padding: 32px;
+      width: 380px;
+      animation: fadeInScale 0.3s ease both;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    .modal-title {
+      font-size: 18px; font-weight: 700; margin-bottom: 20px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-close {
+      background: rgba(255,255,255,0.1);
+      border: none;
+      border-radius: 8px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 16px;
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    .modal-close:hover { background: rgba(255,255,255,0.18); color: var(--text-primary); }
+    .form-group { margin-bottom: 16px; }
+    .form-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 7px; display: block; }
+    .form-input, .form-select {
+      width: 100%;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid var(--glass-border);
+      border-radius: 11px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: inherit;
+      padding: 11px 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-input:focus, .form-select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+    .form-select option { background: #0d1b3e; }
+    .emoji-picker { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .emoji-opt {
+      width: 38px; height: 38px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid var(--glass-border);
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .emoji-opt:hover, .emoji-opt.selected { background: var(--accent-soft); border-color: var(--accent); }
+    .modal-actions { display: flex; gap: 10px; margin-top: 24px; }
+    .btn-primary {
+      flex: 1;
+      background: var(--accent);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 13px;
+      transition: opacity 0.15s, transform 0.1s;
+      font-family: inherit;
+    }
+    .btn-primary:hover { opacity: 0.88; }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-secondary {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 15px;
+      padding: 13px 20px;
+      transition: background 0.15s;
+      font-family: inherit;
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.13); color: var(--text-primary); }
+    .btn-danger {
+      background: rgba(255,69,58,0.12);
+      border: 1px solid rgba(255,69,58,0.25);
+      border-radius: 12px;
+      color: var(--red);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 10px 16px;
+      transition: background 0.15s;
+      font-family: inherit;
+    }
+    .btn-danger:hover { background: rgba(255,69,58,0.22); }
+
+    .no-results {
+      color: var(--text-muted);
+      font-size: 14px;
+      text-align: center;
+      padding: 32px;
+      display: none;
+    }
+
+    /* Shake on wrong PIN */
+    .auth-card.shake { animation: pinShake 0.4s ease; }
+
+    /* Color swatch picker */
+    .color-swatches { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .swatch {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+    .swatch:hover { transform: scale(1.15); }
+    .swatch.selected { border-color: #fff; }
+
+    /* Context menu on right-click */
+    .ctx-menu {
+      position: fixed;
+      background: rgba(20,28,50,0.97);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 6px;
+      z-index: 300;
+      min-width: 150px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+      display: none;
+      animation: fadeIn 0.15s ease;
+    }
+    .ctx-item {
+      padding: 9px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text-secondary);
+      display: flex; align-items: center; gap: 9px;
+      transition: background 0.1s, color 0.1s;
+    }
+    .ctx-item:hover { background: var(--glass-hover); color: var(--text-primary); }
+    .ctx-item.danger { color: var(--red); }
+    .ctx-item.danger:hover { background: rgba(255,69,58,0.1); }
+    .ctx-divider { height: 1px; background: var(--glass-border); margin: 4px 0; }
+  </style>
+</head>
+<body>
+
+<!-- BACKGROUND -->
+<div class="bg-canvas">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<!-- ── AUTH SCREEN ── -->
+<div id="auth-screen">
+  <div class="auth-card" id="auth-card">
+    <div class="auth-icon">🏠</div>
+    <div class="auth-title">Bale Dashboard</div>
+    <div class="auth-subtitle">Enter your PIN to continue</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="pin-keypad">
+      <button class="pin-key" onclick="pinPress('1')">1</button>
+      <button class="pin-key" onclick="pinPress('2')">2</button>
+      <button class="pin-key" onclick="pinPress('3')">3</button>
+      <button class="pin-key" onclick="pinPress('4')">4</button>
+      <button class="pin-key" onclick="pinPress('5')">5</button>
+      <button class="pin-key" onclick="pinPress('6')">6</button>
+      <button class="pin-key" onclick="pinPress('7')">7</button>
+      <button class="pin-key" onclick="pinPress('8')">8</button>
+      <button class="pin-key" onclick="pinPress('9')">9</button>
+      <button class="pin-key zero" onclick="pinPress('0')">0</button>
+      <button class="pin-key del" onclick="pinDel()">⌫</button>
+    </div>
+    <div class="auth-error" id="auth-error"></div>
+    <div class="auth-hint">Forgot PIN? <a onclick="showResetConfirm()">Reset dashboard</a></div>
+  </div>
+</div>
+
+<!-- ── SETUP SCREEN ── -->
+<div id="setup-screen">
+  <div class="setup-card">
+    <div class="auth-icon">✨</div>
+    <div class="auth-title" style="text-align:center;margin-bottom:4px;">Welcome!</div>
+    <div class="auth-subtitle" style="text-align:center;margin-bottom:28px;">Set a 4-digit PIN to secure your dashboard</div>
+
+    <div class="setup-step active" id="step1">
+      <div class="auth-subtitle" style="margin-bottom:16px;">Choose your PIN:</div>
+      <div class="pin-dots">
+        <div class="pin-dot" id="sd0"></div>
+        <div class="pin-dot" id="sd1"></div>
+        <div class="pin-dot" id="sd2"></div>
+        <div class="pin-dot" id="sd3"></div>
+      </div>
+      <div class="pin-keypad">
+        <button class="pin-key" onclick="setupPress('1')">1</button>
+        <button class="pin-key" onclick="setupPress('2')">2</button>
+        <button class="pin-key" onclick="setupPress('3')">3</button>
+        <button class="pin-key" onclick="setupPress('4')">4</button>
+        <button class="pin-key" onclick="setupPress('5')">5</button>
+        <button class="pin-key" onclick="setupPress('6')">6</button>
+        <button class="pin-key" onclick="setupPress('7')">7</button>
+        <button class="pin-key" onclick="setupPress('8')">8</button>
+        <button class="pin-key" onclick="setupPress('9')">9</button>
+        <button class="pin-key zero" onclick="setupPress('0')">0</button>
+        <button class="pin-key del" onclick="setupDel()">⌫</button>
+      </div>
+    </div>
+
+    <div class="setup-step" id="step2">
+      <div class="auth-subtitle" style="margin-bottom:16px;">Confirm your PIN:</div>
+      <div class="pin-dots">
+        <div class="pin-dot" id="sc0"></div>
+        <div class="pin-dot" id="sc1"></div>
+        <div class="pin-dot" id="sc2"></div>
+        <div class="pin-dot" id="sc3"></div>
+      </div>
+      <div class="pin-keypad">
+        <button class="pin-key" onclick="confirmPress('1')">1</button>
+        <button class="pin-key" onclick="confirmPress('2')">2</button>
+        <button class="pin-key" onclick="confirmPress('3')">3</button>
+        <button class="pin-key" onclick="confirmPress('4')">4</button>
+        <button class="pin-key" onclick="confirmPress('5')">5</button>
+        <button class="pin-key" onclick="confirmPress('6')">6</button>
+        <button class="pin-key" onclick="confirmPress('7')">7</button>
+        <button class="pin-key" onclick="confirmPress('8')">8</button>
+        <button class="pin-key" onclick="confirmPress('9')">9</button>
+        <button class="pin-key zero" onclick="confirmPress('0')">0</button>
+        <button class="pin-key del" onclick="confirmDel()">⌫</button>
+      </div>
+      <div class="auth-error" id="setup-error"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── DASHBOARD ── -->
+<div id="dashboard">
+  <div class="header">
+    <div class="header-left">
+      <div class="logo-mark">🏠</div>
+      <div class="logo-text">Bale <span>Dashboard</span></div>
+    </div>
+    <div class="header-right">
+      <div class="clock" id="clock"></div>
+      <button class="header-btn" onclick="openAddModal()">＋ Add</button>
+      <button class="header-btn" onclick="showChangePin()">🔐 PIN</button>
+      <button class="header-btn" onclick="lockDashboard()">🔒 Lock</button>
+    </div>
+  </div>
+
+  <div class="greeting-section">
+    <div class="greeting-time" id="greeting-period"></div>
+    <div class="greeting-text" id="greeting-text"></div>
+    <div class="greeting-sub" id="greeting-sub"></div>
+  </div>
+
+  <div class="search-wrap">
+    <span class="search-icon">⌕</span>
+    <input id="search-input" type="text" placeholder="Search bookmarks…" oninput="filterBookmarks(this.value)" />
+  </div>
+
+  <div id="categories-container"></div>
+  <div class="no-results" id="no-results">No bookmarks match your search.</div>
+</div>
+
+<!-- ── ADD/EDIT MODAL ── -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="modal-title-text">Add Bookmark</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Name</label>
+      <input class="form-input" id="bm-name" placeholder="e.g. GitHub" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">URL</label>
+      <input class="form-input" id="bm-url" placeholder="https://…" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Category</label>
+      <select class="form-select" id="bm-cat"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Icon Preview</label>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:6px;">
+        <div id="favicon-preview" style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.08);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;font-size:20px;overflow:hidden;flex-shrink:0;">🌐</div>
+        <div style="flex:1;">
+          <div style="font-size:12px;color:var(--text-muted);line-height:1.5;">Favicon diambil otomatis dari URL.<br>Isi emoji di bawah sebagai cadangan jika gagal.</div>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Emoji Cadangan</label>
+      <input class="form-input" id="bm-emoji" placeholder="🌐" maxlength="2" style="width:80px;text-align:center;font-size:20px;" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Warna Latar Icon</label>
+      <div class="color-swatches" id="color-swatches"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="modal-delete-btn" onclick="deleteBookmark()" style="display:none">Delete</button>
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveBookmark()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD CATEGORY MODAL ── -->
+<div class="modal-overlay" id="cat-modal-overlay">
+  <div class="modal" style="width:320px">
+    <div class="modal-title">
+      <span>Add Category</span>
+      <button class="modal-close" onclick="closeCatModal()">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Category Name</label>
+      <input class="form-input" id="cat-name-input" placeholder="e.g. Design" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Color</label>
+      <div class="color-swatches" id="cat-color-swatches"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeCatModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveCategory()">Add Category</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CONTEXT MENU ── -->
+<div class="ctx-menu" id="ctx-menu">
+  <div class="ctx-item" onclick="ctxEdit()">✏️ Edit</div>
+  <div class="ctx-item" onclick="ctxOpen()">↗️ Open in new tab</div>
+  <div class="ctx-divider"></div>
+  <div class="ctx-item danger" onclick="ctxDelete()">🗑 Delete</div>
+</div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────
+const STORAGE_KEY = 'bale_dashboard_v2';
+const PIN_KEY = 'bale_pin';
+
+const EMOJIS = ['🌐','⚡','📁','📊','🎨','🛠','💻','📝','🔗','📱','🎯','🚀','🔑','📧','🗂','💬','🎥','📸','🔔','🏠','⚙️','🌍','💡','🔒','📦','🖥','📋','🎵','🌙','☁️','🔧','🧩','💰','📅','🤖','🧪','🔍','✅','🏢','🎓'];
+
+const COLORS = {
+  blue:   '#2997ff',
+  green:  '#30d158',
+  red:    '#ff453a',
+  purple: '#bf5af2',
+  pink:   '#ff375f',
+  orange: '#ff9f0a',
+  teal:   '#5ac8fa',
+  yellow: '#ffd60a',
+  indigo: '#6e6dff',
+  cyan:   '#32ade6',
+};
+
+const DEFAULT_DATA = {
+  categories: [
+    { id: 'dev',     name: 'Development', color: 'blue' },
+    { id: 'client',  name: 'Client Projects', color: 'purple' },
+    { id: 'tools',   name: 'Tools & Productivity', color: 'green' },
+    { id: 'infra',   name: 'Infrastructure', color: 'orange' },
+  ],
+  bookmarks: [
+    { id: 'b1',  name: 'GitHub',         url: 'https://github.com',        cat: 'dev',    emoji: '🐙', color: 'blue' },
+    { id: 'b2',  name: 'Claude',         url: 'https://claude.ai',         cat: 'tools',  emoji: '🤖', color: 'purple' },
+    { id: 'b3',  name: 'Notion',         url: 'https://notion.so',         cat: 'tools',  emoji: '📝', color: 'indigo' },
+    { id: 'b4',  name: 'Linear',         url: 'https://linear.app',        cat: 'tools',  emoji: '🎯', color: 'green' },
+    { id: 'b5',  name: 'Figma',          url: 'https://figma.com',         cat: 'tools',  emoji: '🎨', color: 'pink' },
+    { id: 'b6',  name: 'Supabase',       url: 'https://supabase.com',      cat: 'infra',  emoji: '⚡', color: 'green' },
+    { id: 'b7',  name: 'Netlify',        url: 'https://app.netlify.com',   cat: 'infra',  emoji: '☁️', color: 'teal' },
+    { id: 'b8',  name: 'Gmail',          url: 'https://mail.google.com',   cat: 'tools',  emoji: '📧', color: 'red' },
+    { id: 'b9',  name: 'Accurate Online',url: 'https://accurate.id',       cat: 'client', emoji: '💰', color: 'orange' },
+    { id: 'b10', name: 'Bale Software',  url: 'https://balesoftware.id',   cat: 'client', emoji: '🏠', color: 'blue' },
+  ]
+};
+
+let data = null;
+let editingId = null;
+let selectedEmoji = '🌐';
+let selectedColor = 'blue';
+let selectedCatColor = 'blue';
+let ctxTargetId = null;
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) { data = JSON.parse(raw); }
+    else { data = JSON.parse(JSON.stringify(DEFAULT_DATA)); saveData(); }
+  } catch(e) { data = JSON.parse(JSON.stringify(DEFAULT_DATA)); }
+}
+function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+// ─── PIN AUTH ────────────────────────────────────────────────────
+let pinBuffer = '';
+let setupBuffer = '';
+let confirmBuffer = '';
+
+function getPin() { return localStorage.getItem(PIN_KEY); }
+function setPin(p) { localStorage.setItem(PIN_KEY, p); }
+
+function init() {
+  loadData();
+  const pin = getPin();
+  if (!pin) {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('setup-screen').style.display = 'flex';
+  } else {
+    document.getElementById('auth-screen').style.display = 'flex';
+  }
+  startClock();
+}
+
+function pinPress(d) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += d;
+  updatePinDots(pinBuffer, 'd');
+  if (pinBuffer.length === 4) {
+    setTimeout(() => checkPin(), 150);
+  }
+}
+function pinDel() {
+  pinBuffer = pinBuffer.slice(0,-1);
+  updatePinDots(pinBuffer, 'd');
+  document.getElementById('auth-error').textContent = '';
+}
+function updatePinDots(buf, prefix) {
+  for (let i=0; i<4; i++) {
+    const d = document.getElementById(prefix+i);
+    d.className = 'pin-dot' + (i < buf.length ? ' filled' : '');
+  }
+}
+function checkPin() {
+  if (pinBuffer === getPin()) {
+    unlockDashboard();
+  } else {
+    document.getElementById('auth-error').textContent = 'Incorrect PIN. Try again.';
+    const card = document.getElementById('auth-card');
+    card.classList.add('shake');
+    for (let i=0;i<4;i++) document.getElementById('d'+i).classList.add('error');
+    setTimeout(() => {
+      card.classList.remove('shake');
+      pinBuffer = '';
+      updatePinDots('','d');
+      for(let i=0;i<4;i++){document.getElementById('d'+i).classList.remove('error');}
+    }, 600);
+  }
+}
+function unlockDashboard() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  renderDashboard();
+}
+function lockDashboard() {
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+  pinBuffer = '';
+  updatePinDots('','d');
+  document.getElementById('auth-error').textContent = '';
+}
+
+// ─── SETUP ───────────────────────────────────────────────────────
+function setupPress(d) {
+  if (setupBuffer.length >= 4) return;
+  setupBuffer += d;
+  updatePinDots(setupBuffer, 'sd');
+  if (setupBuffer.length === 4) {
+    setTimeout(() => {
+      document.getElementById('step1').classList.remove('active');
+      document.getElementById('step2').classList.add('active');
+    }, 150);
+  }
+}
+function setupDel() { setupBuffer = setupBuffer.slice(0,-1); updatePinDots(setupBuffer, 'sd'); }
+function confirmPress(d) {
+  if (confirmBuffer.length >= 4) return;
+  confirmBuffer += d;
+  updatePinDots(confirmBuffer, 'sc');
+  if (confirmBuffer.length === 4) {
+    setTimeout(() => {
+      if (confirmBuffer === setupBuffer) {
+        setPin(setupBuffer);
+        unlockDashboard();
+      } else {
+        document.getElementById('setup-error').textContent = 'PINs don\'t match. Try again.';
+        confirmBuffer = ''; setupBuffer = '';
+        updatePinDots('','sc'); updatePinDots('','sd');
+        document.getElementById('step2').classList.remove('active');
+        document.getElementById('step1').classList.add('active');
+      }
+    }, 150);
+  }
+}
+function confirmDel() { confirmBuffer = confirmBuffer.slice(0,-1); updatePinDots(confirmBuffer,'sc'); }
+
+function showResetConfirm() {
+  if (confirm('This will delete all your bookmarks and PIN. Continue?')) {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(PIN_KEY);
+    location.reload();
+  }
+}
+
+// ─── CLOCK & GREETING ────────────────────────────────────────────
+function startClock() {
+  function tick() {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mm = String(now.getMinutes()).padStart(2,'0');
+    const ss = String(now.getSeconds()).padStart(2,'0');
+    const cl = document.getElementById('clock');
+    if (cl) cl.textContent = `${hh}:${mm}:${ss}`;
+    updateGreeting(now);
+    setTimeout(tick, 1000);
+  }
+  tick();
+}
+function updateGreeting(now) {
+  const h = now.getHours();
+  const period = h < 5 ? 'LATE NIGHT' : h < 12 ? 'GOOD MORNING' : h < 17 ? 'GOOD AFTERNOON' : h < 21 ? 'GOOD EVENING' : 'GOOD NIGHT';
+  const greetEl = document.getElementById('greeting-text');
+  const periodEl = document.getElementById('greeting-period');
+  const subEl = document.getElementById('greeting-sub');
+  if (greetEl) {
+    greetEl.textContent = `${period === 'GOOD MORNING' ? 'Morning, Reva ☀️' : period === 'GOOD AFTERNOON' ? 'Afternoon, Reva 🌤' : period === 'GOOD EVENING' ? 'Evening, Reva 🌆' : period === 'LATE NIGHT' ? 'Still up, Reva? 🌙' : 'Good night, Reva 🌙'}`;
+  }
+  if (periodEl) periodEl.textContent = period;
+  if (subEl) {
+    const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const n = now;
+    subEl.textContent = `${days[n.getDay()]}, ${n.getDate()} ${months[n.getMonth()]} ${n.getFullYear()}`;
+  }
+}
+
+// ─── RENDER ──────────────────────────────────────────────────────
+function renderDashboard() {
+  const container = document.getElementById('categories-container');
+  container.innerHTML = '';
+
+  data.categories.forEach(cat => {
+    const catBms = data.bookmarks.filter(b => b.cat === cat.id);
+    const section = document.createElement('div');
+    section.className = 'category-section';
+    section.dataset.cat = cat.id;
+
+    const color = COLORS[cat.color] || '#2997ff';
+    section.innerHTML = `
+      <div class="category-header">
+        <div class="category-dot" style="background:${color}"></div>
+        <span class="category-label">${cat.name}</span>
+      </div>
+      <div class="bookmarks-grid" id="grid-${cat.id}"></div>
+    `;
+    container.appendChild(section);
+
+    const grid = document.getElementById('grid-'+cat.id);
+    catBms.forEach(bm => grid.appendChild(makeCard(bm)));
+
+    // Add new bookmark button
+    const addBtn = document.createElement('button');
+    addBtn.className = 'add-bookmark-btn';
+    addBtn.innerHTML = `<div class="add-icon">＋</div><span>Add to ${cat.name}</span>`;
+    addBtn.onclick = () => openAddModal(cat.id);
+    grid.appendChild(addBtn);
+  });
+
+  // Add category button
+  const addCatDiv = document.createElement('div');
+  addCatDiv.style.cssText = 'margin-top:8px;margin-bottom:36px;animation:fadeIn 0.5s ease 0.3s both;';
+  addCatDiv.innerHTML = `<button class="add-bookmark-btn" style="max-width:240px" onclick="openCatModal()"><div class="add-icon">📂</div><span>Add Category</span></button>`;
+  container.appendChild(addCatDiv);
+}
+
+// Ambil nama domain dari URL, misal "https://github.com/foo" → "github.com"
+function getDomain(url) {
+  try { return new URL(url).hostname; }
+  catch(e) { return ''; }
+}
+
+// Buat URL favicon dari Google — Google sudah menyimpan ikon semua website di server mereka
+// sz=64 artinya kita minta ukuran 64x64 piksel supaya tetap tajam
+function getFaviconUrl(url) {
+  const domain = getDomain(url);
+  if (!domain) return null;
+  return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+}
+
+function makeCard(bm) {
+  const color = COLORS[bm.color] || '#2997ff';
+  const faviconUrl = getFaviconUrl(bm.url);
+  const fallbackEmoji = bm.emoji || '🌐';
+
+  const a = document.createElement('a');
+  a.className = 'bookmark-card';
+  a.href = bm.url;
+  a.dataset.id = bm.id;
+  a.dataset.name = bm.name.toLowerCase();
+
+  // Buat elemen icon — coba tampilkan favicon dulu
+  const iconDiv = document.createElement('div');
+  iconDiv.className = 'bookmark-icon';
+  iconDiv.style.background = `${color}22`;
+
+  if (faviconUrl) {
+    const img = document.createElement('img');
+    img.src = faviconUrl;
+    img.alt = bm.name;
+    // Kalau favicon gagal dimuat (website tidak punya / koneksi offline), tampilkan emoji sebagai gantinya
+    img.onerror = () => {
+      iconDiv.innerHTML = `<span class="icon-fallback">${fallbackEmoji}</span>`;
+    };
+    iconDiv.appendChild(img);
+  } else {
+    iconDiv.innerHTML = `<span class="icon-fallback">${fallbackEmoji}</span>`;
+  }
+
+  const infoDiv = document.createElement('div');
+  infoDiv.className = 'bookmark-info';
+  infoDiv.innerHTML = `
+    <div class="bookmark-name">${bm.name}</div>
+    <div class="bookmark-url">${bm.url.replace(/^https?:\/\/(www\.)?/,'')}</div>
+  `;
+
+  a.appendChild(iconDiv);
+  a.appendChild(infoDiv);
+  a.addEventListener('contextmenu', e => { e.preventDefault(); showCtxMenu(e, bm.id); });
+  return a;
+}
+
+// ─── SEARCH ──────────────────────────────────────────────────────
+function filterBookmarks(q) {
+  q = q.toLowerCase().trim();
+  let anyVisible = false;
+  document.querySelectorAll('.bookmark-card').forEach(card => {
+    const match = !q || card.dataset.name.includes(q);
+    card.classList.toggle('hidden', !match);
+    if (match) anyVisible = true;
+  });
+  document.getElementById('no-results').style.display = anyVisible || !q ? 'none' : 'block';
+}
+
+// ─── ADD / EDIT MODAL ────────────────────────────────────────────
+function openAddModal(catId=null) {
+  editingId = null;
+  selectedColor = 'blue';
+  document.getElementById('modal-title-text').textContent = 'Add Bookmark';
+  document.getElementById('bm-name').value = '';
+  document.getElementById('bm-url').value = '';
+  document.getElementById('bm-emoji').value = '🌐';
+  updateFaviconPreview('', '🌐');
+  document.getElementById('modal-delete-btn').style.display = 'none';
+  populateCatSelect(catId);
+  renderColorSwatches('color-swatches', 'blue');
+  document.getElementById('modal-overlay').classList.add('show');
+  setTimeout(()=>document.getElementById('bm-name').focus(),100);
+}
+
+function openEditModal(id) {
+  const bm = data.bookmarks.find(b=>b.id===id);
+  if (!bm) return;
+  editingId = id;
+  selectedColor = bm.color || 'blue';
+  document.getElementById('modal-title-text').textContent = 'Edit Bookmark';
+  document.getElementById('bm-name').value = bm.name;
+  document.getElementById('bm-url').value = bm.url;
+  document.getElementById('bm-emoji').value = bm.emoji || '🌐';
+  updateFaviconPreview(bm.url, bm.emoji || '🌐');
+  document.getElementById('modal-delete-btn').style.display = '';
+  populateCatSelect(bm.cat);
+  renderColorSwatches('color-swatches', bm.color || 'blue');
+  document.getElementById('modal-overlay').classList.add('show');
+}
+
+function closeModal() { document.getElementById('modal-overlay').classList.remove('show'); }
+
+function populateCatSelect(selectedCat) {
+  const sel = document.getElementById('bm-cat');
+  sel.innerHTML = '';
+  data.categories.forEach(cat => {
+    const opt = document.createElement('option');
+    opt.value = cat.id;
+    opt.textContent = cat.name;
+    if (cat.id === selectedCat) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+// Update kotak preview favicon di modal — tampilkan favicon asli dari URL yang diketik user
+// Kalau favicon gagal → tampilkan emoji cadangan
+function updateFaviconPreview(url, fallbackEmoji) {
+  const preview = document.getElementById('favicon-preview');
+  if (!preview) return;
+  const faviconUrl = getFaviconUrl(url);
+  if (faviconUrl) {
+    const img = document.createElement('img');
+    img.src = faviconUrl;
+    img.style.cssText = 'width:28px;height:28px;object-fit:contain;border-radius:4px;';
+    img.onload = () => { preview.innerHTML = ''; preview.appendChild(img); };
+    img.onerror = () => { preview.textContent = fallbackEmoji || '🌐'; };
+  } else {
+    preview.textContent = fallbackEmoji || '🌐';
+  }
+}
+
+function renderColorSwatches(containerId, activeColor) {
+  const wrap = document.getElementById(containerId);
+  wrap.innerHTML = '';
+  Object.entries(COLORS).forEach(([name, hex]) => {
+    const sw = document.createElement('div');
+    sw.className = 'swatch' + (name===activeColor?' selected':'');
+    sw.style.background = hex;
+    sw.title = name;
+    sw.onclick = () => {
+      if (containerId === 'color-swatches') selectedColor = name;
+      else selectedCatColor = name;
+      wrap.querySelectorAll('.swatch').forEach(s=>s.classList.remove('selected'));
+      sw.classList.add('selected');
+    };
+    wrap.appendChild(sw);
+  });
+}
+
+function saveBookmark() {
+  const name = document.getElementById('bm-name').value.trim();
+  let url = document.getElementById('bm-url').value.trim();
+  const cat = document.getElementById('bm-cat').value;
+  const emoji = document.getElementById('bm-emoji').value.trim() || '🌐';
+  if (!name || !url) { alert('Please fill in name and URL.'); return; }
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+  if (editingId) {
+    const bm = data.bookmarks.find(b=>b.id===editingId);
+    Object.assign(bm, { name, url, cat, emoji, color: selectedColor });
+  } else {
+    data.bookmarks.push({ id: 'b'+Date.now(), name, url, cat, emoji, color: selectedColor });
+  }
+  saveData();
+  closeModal();
+  renderDashboard();
+}
+
+function deleteBookmark() {
+  if (!editingId) return;
+  if (!confirm('Delete this bookmark?')) return;
+  data.bookmarks = data.bookmarks.filter(b=>b.id!==editingId);
+  saveData();
+  closeModal();
+  renderDashboard();
+}
+
+// ─── CATEGORY MODAL ──────────────────────────────────────────────
+function openCatModal() {
+  selectedCatColor = 'blue';
+  document.getElementById('cat-name-input').value = '';
+  renderColorSwatches('cat-color-swatches', 'blue');
+  document.getElementById('cat-modal-overlay').classList.add('show');
+  setTimeout(()=>document.getElementById('cat-name-input').focus(),100);
+}
+function closeCatModal() { document.getElementById('cat-modal-overlay').classList.remove('show'); }
+function saveCategory() {
+  const name = document.getElementById('cat-name-input').value.trim();
+  if (!name) { alert('Enter a category name.'); return; }
+  data.categories.push({ id: 'cat_'+Date.now(), name, color: selectedCatColor });
+  saveData();
+  closeCatModal();
+  renderDashboard();
+}
+
+// ─── CONTEXT MENU ────────────────────────────────────────────────
+function showCtxMenu(e, id) {
+  ctxTargetId = id;
+  const menu = document.getElementById('ctx-menu');
+  menu.style.display = 'block';
+  menu.style.left = Math.min(e.clientX, window.innerWidth-160) + 'px';
+  menu.style.top = Math.min(e.clientY, window.innerHeight-120) + 'px';
+}
+function hideCtxMenu() { document.getElementById('ctx-menu').style.display = 'none'; }
+function ctxEdit() { hideCtxMenu(); openEditModal(ctxTargetId); }
+function ctxOpen() { hideCtxMenu(); const bm = data.bookmarks.find(b=>b.id===ctxTargetId); if(bm) window.open(bm.url,'_blank'); }
+function ctxDelete() {
+  hideCtxMenu();
+  if (!confirm('Delete this bookmark?')) return;
+  data.bookmarks = data.bookmarks.filter(b=>b.id!==ctxTargetId);
+  saveData();
+  renderDashboard();
+}
+document.addEventListener('click', hideCtxMenu);
+document.addEventListener('keydown', e => { if(e.key==='Escape') { closeModal(); closeCatModal(); hideCtxMenu(); }});
+
+// ─── CHANGE PIN ──────────────────────────────────────────────────
+function showChangePin() {
+  const newPin = prompt('Enter new 4-digit PIN:');
+  if (!newPin) return;
+  if (!/^\d{4}$/.test(newPin)) { alert('PIN must be exactly 4 digits.'); return; }
+  setPin(newPin);
+  alert('PIN changed successfully!');
+}
+
+// ─── KEYBOARD SHORTCUTS ──────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (document.getElementById('dashboard').style.display === 'block') {
+    if ((e.metaKey||e.ctrlKey) && e.key==='k') {
+      e.preventDefault();
+      document.getElementById('search-input').focus();
+    }
+    if ((e.metaKey||e.ctrlKey) && e.key==='n') {
+      e.preventDefault();
+      openAddModal();
+    }
+  }
+});
+
+// Live preview: setiap kali user mengetik URL di modal, langsung update preview favicon
+document.getElementById('bm-url').addEventListener('input', function() {
+  const emoji = document.getElementById('bm-emoji').value || '🌐';
+  updateFaviconPreview(this.value, emoji);
+});
+document.getElementById('bm-emoji').addEventListener('input', function() {
+  const url = document.getElementById('bm-url').value;
+  if (!getFaviconUrl(url)) updateFaviconPreview('', this.value);
+});
+
+// ─── START ───────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
